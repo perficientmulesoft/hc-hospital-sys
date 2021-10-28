@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	
+	<flow name="bed-Availability-Flow" doc:id="81ce02bc-d286-45be-ba9e-544e24b2e754" >
+		<ee:transform doc:name="setVariables" doc:id="c08da294-22ad-49dd-ad4c-aad327464aec">
+			<ee:message>
+			</ee:message>
+			<ee:variables>
+				<ee:set-variable variableName="queryParameters"><![CDATA[%dw 2.0
+output application/json
+---
+attributes.queryParams]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<logger level="INFO" doc:name="initilaLogger" doc:id="0c9b5c4a-4e0e-4b17-9a6d-6a55176a2099" message="Before Calling to database For bed Availability." />
+		<choice doc:name="Choice" doc:id="59099c41-a82e-4399-bfd0-afa379c4f796" >
+			<when expression="#[vars.queryParameters.HospitalName != null]">
+				<ee:transform doc:name="buildQuery" doc:id="576d55a5-98c6-49ce-a7c6-8707a3f6b7f0">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json skipNullOn="everywhere"
+---
+{
+	city: if(vars.queryParameters.city != null) vars.queryParameters.city else "Nagpur",
+    HospitalName: vars.queryParameters.HospitalName,
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+				<db:select doc:name="getDataFromHospitalDatabase" doc:id="3e3fb6b3-6ffb-4365-88b4-03c4a0495fb2" config-ref="Hospital_Database_Config">
+			<db:sql><![CDATA[Select AvailableICUBed,AvailableBed, City from Hospital where City = :city and HospitalName = :HospitalName]]></db:sql>
+			<db:input-parameters><![CDATA[#[payload]]]></db:input-parameters>
+		</db:select>
+				<ee:transform doc:name="responsePayload" doc:id="94faf88b-b058-4364-9014-a98b29cf9f67">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+[{
+	"Name Of Hospital" : vars.queryParameters.HospitalName,
+	"Name Of City" : if(vars.queryParameters.city != null) vars.queryParameters.city else payload.City[0],
+	"Number Of ICU Beds" : payload.AvailableICUBed[0],
+	"Number Of Gen Beds" : payload.AvailableBed[0]
+}]]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+			</when>
+			<otherwise >
+				<db:select doc:name="getDataForAllHospitalFromHospitalDatabase" doc:id="c863c8a0-67d8-47ce-a4e1-71e8e4327776" config-ref="Hospital_Database_Config" >
+					<db:sql ><![CDATA[Select HospitalName, AvailableICUBed,AvailableBed from Hospital]]></db:sql>
+				</db:select>
+				<ee:transform doc:name="responsePayload" doc:id="18d5383a-ebc7-4730-9506-cdd353db28e0" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map ((item, index) -> {
+    HospitalName : item.HospitalName,
+    AvailableICUBed : item.AvailableICUBed,
+    AvailableBed : item.AvailableBed
+})]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</otherwise>
+		</choice>
+		<logger level="INFO" doc:name="Logger" doc:id="9d7788ca-1dec-498c-9df0-959a745e882b" message="Database Call complete."/>
+	
+</flow>
+</mule>

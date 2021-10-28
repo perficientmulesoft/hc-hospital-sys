@@ -1,0 +1,49 @@
+#%RAML 1.0
+version: v1.0
+types:
+  StandardErrorOrSuccess: !include  DataTypes/StandardErrorOrSuccessDataType.raml
+title: hc-hospital-sys
+#%RAML 1.0
+description: |
+  This API gives you all medical related Information!
+mediaType:
+  - application/json
+/getAvailableBedInformation:
+  get:
+    description: Get all available bed Information.
+    queryParameters:
+      HospitalName?:
+        type: string
+      city?:
+        type: string
+    responses:
+      "200" :
+        description: Get all available bed data.
+        body:
+          type: StandardErrorOrSuccess
+      "400":
+        description: Wrong input data or malformed input
+        body:
+          type: StandardErrorOrSuccess
+      "500":
+        description: Something went wrong on the server side
+        body:
+          type: StandardErrorOrSuccess
+/updateInformation:
+  post:
+    description: Get all available bed Information.
+    body:
+      type: any
+    responses:
+      "200" :
+        description: Get all available bed data.
+        body:
+          type: StandardErrorOrSuccess
+      "400":
+        description: Wrong input data or malformed input
+        body:
+          type: StandardErrorOrSuccess
+      "500":
+        description: Something went wrong on the server side
+        body:
+          type: StandardErrorOrSuccess

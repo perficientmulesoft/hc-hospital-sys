@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd 
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="7a33b914-eda4-41d0-8d39-aec9ef2401bd" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<apikit:config name="hc-hospital-sys-config" api="hc-hospital-sys.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+	<db:config name="Hospital_Database_Config" doc:name="Database Config" doc:id="8bdcbd5d-3ac9-49aa-9014-b2fc6d7236f4" >
+		<db:my-sql-connection host="${hospitalDatabase.host}" port="${hospitalDatabase.port}" user="${hospitalDatabase.user}" password="${hospitalDatabase.password}" database="${hospitalDatabase.databaseName}" />
+	</db:config>
+	<global-property doc:name="Global Property" doc:id="e5397141-b309-46a6-96c4-6f5fe55ee024" name="mule.env" value="dev" />
+	<configuration-properties doc:name="Configuration properties" doc:id="671dabd3-3bc1-400f-9895-60d14abf2902" file="config-${mule.env}.yaml" />
+	<configuration-properties doc:name="Configuration properties" doc:id="0e19ed94-d8fb-464d-900d-b64000bac330" file="config-common.yaml" />
+</mule>

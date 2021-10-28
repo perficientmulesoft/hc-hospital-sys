@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+	<flow name="updateBedInformationFlow" doc:id="f5e211b7-926c-47fe-a891-d046b2d0ded5" >
+		<logger level="INFO" doc:name="initialLogger" doc:id="76c947fc-3c7e-40a5-ab1a-3a5934c06a6c" message="Flow started for Updating database Information"/>
+		<ee:transform doc:name="setInputPayload" doc:id="4e99ce0e-18ce-4c25-8c9b-3f8a392acc43" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="inputPayload" ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<db:select doc:name="Select" doc:id="29943dc8-e25a-4111-bfd3-38d1e2976e23" config-ref="Hospital_Database_Config" target="totalResult">
+			<db:sql ><![CDATA[Select * from Hospital where HospitalName = :HospitalName]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	HospitalName: vars.inputPayload.HospitalName
+}]]]></db:input-parameters>
+		</db:select>
+		<choice doc:name="Choice" doc:id="3efe88d0-e868-4bf1-8355-280893c3f8c1" >
+			<when expression="#[sizeOf(vars.totalResult) &gt; 0]">
+				<ee:transform doc:name="buildQueryFOrUpdateRecord" doc:id="33b75321-80d2-4eb7-9630-3e75038151dd">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	HospitalName: if(vars.inputPayload.HospitalName != null) vars.inputPayload.HospitalName else vars.totalResult.HospitalName[0],
+	City: if(vars.inputPayload.City != null) vars.inputPayload.City else vars.totalResult.City[0],
+	AvailableICUBedCount: if(vars.inputPayload.AvailableICUBedCount != null) vars.inputPayload.AvailableICUBedCount else vars.totalResult.AvailableICUBed[0],
+	AvailableBedCount: if(vars.inputPayload.AvailableBedCount != null) vars.inputPayload.AvailableBedCount else vars.totalResult.AvailableBed[0],
+	ContactNumber: if(vars.inputPayload.ContactNumber != null) vars.inputPayload.ContactNumber else vars.totalResult.ContactNumber[0]
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<logger level="INFO" doc:name="Logger" doc:id="a9781d86-2328-43af-b8b1-cff71cf9f6a6" message="Data Available, Updating Information into Database"/>
+				<db:update doc:name="Update" doc:id="a7930892-52e1-4656-bb29-759fccd066ce" config-ref="Hospital_Database_Config">
+					<db:sql ><![CDATA[UPDATE Hospital SET AvailableICUBed = :AvailableICUBedCount, AvailableBed = :AvailableBedCount WHERE HospitalName = :HospitalName]]></db:sql>
+					<db:input-parameters ><![CDATA[#[payload]]]></db:input-parameters>
+				</db:update>
+				<logger level="INFO" doc:name="Logger" doc:id="bd456003-5bfd-4f69-8e61-cb4d84858ee2" message="Data updated into database"/>
+				<ee:transform doc:name="responsePaylod" doc:id="dca48b3c-ced1-4146-8390-510adef1ee4f" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"header": {
+		"statusCode" : 200,
+		"Message" : "Data Updated Successfully"
+	}
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</when>
+			<otherwise >
+				<ee:transform doc:name="buildQueryForNewRecord" doc:id="6b8e6700-09e8-43d0-87cf-59e8bfbca1ca">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	HospitalName: vars.inputPayload.HospitalName,
+	City: vars.inputPayload.City,
+	AvailableICUBedCount: vars.inputPayload.AvailableICUBedCount,
+	AvailableBedCount: vars.inputPayload.AvailableBedCount,
+	ContactNumber: vars.inputPayload.ContactNumber
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+				<logger level="INFO" doc:name="Logger" doc:id="5d412550-233f-4776-8474-5780bbba4ce3" message="Data not available, adding new data to database"/>
+				<db:insert doc:name="Insert" doc:id="a4cf15ca-2d86-4c51-a86b-8305de6ef7b6" config-ref="Hospital_Database_Config">
+					<db:sql ><![CDATA[INSERT INTO `Hospital`(`HospitalName`, `City`, `AvailableICUBed`, `AvailableBed`, `ContactNumber`) VALUES (:HospitalName, :City, :AvailableICUBedCount, :AvailableBedCount, :ContactNumber)]]></db:sql>
+					<db:input-parameters ><![CDATA[#[payload]]]></db:input-parameters>
+				</db:insert>
+				<logger level="INFO" doc:name="Logger" doc:id="9ffbac68-b4bd-4c9a-98ca-631c9d32ab41" message="Data added to database"/>
+				<ee:transform doc:name="responsePaylod" doc:id="59dea74d-7ea2-40f3-86ac-14e68e2d4b70" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"header": {
+		"statusCode" : 200,
+		"Message" : "New Data Created Successfully"
+	}
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</otherwise>
+		</choice>
+		<logger level="INFO" doc:name="Logger" doc:id="881c62b5-56cd-4cc5-b4f2-86e4d63b8be4" message="Flow Ends"/>
+	</flow>
+</mule>
