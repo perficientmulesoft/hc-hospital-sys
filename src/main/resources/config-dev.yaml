@@ -1,6 +1,6 @@
 hospitalDatabase:
-  host: "sql6.freesqldatabase.com"
+  host: "b5dhnp4grxggxz9xwe8t-mysql.services.clever-cloud.com"
   port: "3306"
-  user: "sql6446881"
-  password: "6Gr9RnRrxN"
-  databaseName: "sql6446881"
+  user: "ujftlzqgcc1ktujb"
+  password: "hT31BbJ0y08CxWEpGrf9"
+  databaseName: "b5dhnp4grxggxz9xwe8t"
